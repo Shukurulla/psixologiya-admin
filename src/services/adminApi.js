@@ -31,4 +31,16 @@ export const adminApi = {
   updateTest: (id, data) => api.put(`/admin/tests/${id}`, data),
   deleteTest: (id) => api.delete(`/admin/tests/${id}`),
   toggleTestStatus: (id) => api.patch(`/admin/tests/${id}/toggle-status`),
+
+  // Chats
+  getChats: () => api.get('/admin/chats'),
+  getChatById: (id) => api.get(`/admin/chats/${id}`),
+  sendChatMessage: (id, data) => api.post(`/admin/chats/${id}/message`, data),
+  markChatAsRead: (id) => api.patch(`/admin/chats/${id}/read`),
+  updateChatStatus: (id, data) => api.patch(`/admin/chats/${id}/status`, data),
+
+  // Appointments
+  getAppointments: (status) => api.get('/admin/appointments', { params: { status } }),
+  getAppointmentById: (id) => api.get(`/admin/appointments/${id}`),
+  updateAppointmentStatus: (id, data) => api.patch(`/admin/appointments/${id}/status`, data),
 };

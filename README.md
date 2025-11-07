@@ -5,12 +5,14 @@ Modern va professional admin panel psixologik test tizimi uchun.
 ## Xususiyatlar
 
 ### 🎨 Dizayn
+
 - Zamonaviy va tushunarli UI/UX
 - Gradient ranglar va smooth animatsiyalar
 - Responsive dizayn (mobile, tablet, desktop)
 - TailwindCSS va custom styling
 
 ### 📊 Dashboard
+
 - Real-time statistikalar
 - Test topshirganlar soni
 - E'tibor talab qiluvchi natijalar
@@ -18,6 +20,7 @@ Modern va professional admin panel psixologik test tizimi uchun.
 - Vizual grafiklar (Bar chart, Pie chart)
 
 ### 📈 Statistika sahifasi
+
 - Test bo'yicha batafsil statistika
 - Har bir test uchun:
   - Topshirgan talabalar soni
@@ -28,6 +31,7 @@ Modern va professional admin panel psixologik test tizimi uchun.
 - Student ma'lumotlarini batafsil ko'rish
 
 ### 🏫 Fakultetlar sahifasi
+
 - Fakultetlar ro'yxati va statistikasi
 - Guruhlar hierarchiyasi
 - Har bir guruh uchun:
@@ -37,6 +41,7 @@ Modern va professional admin panel psixologik test tizimi uchun.
 - Statistika iconlari bilan tezkor kirish
 
 ### 📝 Testlar sahifasi
+
 - CRUD operatsiyalari (Create, Read, Update, Delete)
 - Test yaratish/tahrirlash modal
 - Test holati (faol/nofaol) toggle
@@ -74,7 +79,7 @@ npm run build
 `.env` faylini yarating:
 
 ```env
-VITE_API_URL=https://psixologiya-server.vercel.app/api
+VITE_API_URL=https://server.qmu-psixologik.uz/api
 ```
 
 ## Sahifalar

@@ -6,7 +6,9 @@ import {
   FileText,
   LogOut,
   Menu,
-  X
+  X,
+  MessageSquare,
+  Calendar
 } from 'lucide-react';
 import { authService } from '../services/auth';
 import { useState, useEffect } from 'react';
@@ -22,6 +24,8 @@ const Sidebar = () => {
     { path: '/statistics', icon: BarChart3, label: 'Statistika' },
     { path: '/faculties', icon: School, label: 'Fakultetlar' },
     { path: '/tests', icon: FileText, label: 'Testlar' },
+    { path: '/chats', icon: MessageSquare, label: 'Suhbatlar' },
+    { path: '/appointments', icon: Calendar, label: 'Qabulga yozilishlar' },
   ];
 
   // Close sidebar when route changes on mobile

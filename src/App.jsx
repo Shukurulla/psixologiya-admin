@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard';
 import Statistics from './pages/Statistics';
 import Faculties from './pages/Faculties';
 import Tests from './pages/Tests';
+import Chats from './pages/Chats';
+import AppointmentsAdmin from './pages/AppointmentsAdmin';
 import MainLayout from './layouts/MainLayout';
 
 const queryClient = new QueryClient({
@@ -45,6 +47,8 @@ function App() {
             <Route path="statistics" element={<Statistics />} />
             <Route path="faculties" element={<Faculties />} />
             <Route path="tests" element={<Tests />} />
+            <Route path="chats" element={<Chats />} />
+            <Route path="appointments" element={<AppointmentsAdmin />} />
           </Route>
 
           {/* Catch all */}

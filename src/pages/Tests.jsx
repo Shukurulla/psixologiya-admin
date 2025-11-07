@@ -65,14 +65,31 @@ const Tests = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
+      // Validate that each option has either label or image (at least one required)
+      for (let i = 0; i < formData.questions.length; i++) {
+        const question = formData.questions[i];
+        for (let j = 0; j < question.options.length; j++) {
+          const option = question.options[j];
+          const hasLabel = option.label && option.label.trim() !== '';
+          const hasImage = option.image && option.image.trim() !== '';
+
+          if (!hasLabel && !hasImage) {
+            alert(`Savol ${i + 1}, Variant ${j + 1}: Text yoki rasm kiritish shart!`);
+            return;
+          }
+        }
+      }
+
       // Format questions with proper IDs
       const formattedQuestions = formData.questions.map((q, idx) => ({
         id: idx + 1,
         text: q.text,
+        image: q.image || '',
         options: q.options.map((opt, optIdx) => ({
           value: optIdx,
           label: opt.label,
           score: parseInt(opt.score) || 0,
+          image: opt.image || '',
         })),
       }));
 
@@ -91,6 +108,21 @@ const Tests = () => {
         interpretation: formattedInterpretations,
       };
 
+      console.log('Submitting test data:');
+      console.log('Questions count:', formattedQuestions.length);
+      formattedQuestions.forEach((q, idx) => {
+        console.log(`  Question ${idx + 1}:`, {
+          hasText: !!q.text,
+          hasImage: !!q.image,
+          imageLength: q.image?.length,
+        });
+        q.options.forEach((opt, optIdx) => {
+          if (opt.image) {
+            console.log(`    Option ${optIdx + 1} has image, length:`, opt.image.length);
+          }
+        });
+      });
+
       await adminApi.createTest(submitData);
       setShowCreateModal(false);
       fetchTests();
@@ -105,13 +137,30 @@ const Tests = () => {
   const handleEdit = async (e) => {
     e.preventDefault();
     try {
+      // Validate that each option has either label or image (at least one required)
+      for (let i = 0; i < formData.questions.length; i++) {
+        const question = formData.questions[i];
+        for (let j = 0; j < question.options.length; j++) {
+          const option = question.options[j];
+          const hasLabel = option.label && option.label.trim() !== '';
+          const hasImage = option.image && option.image.trim() !== '';
+
+          if (!hasLabel && !hasImage) {
+            alert(`Savol ${i + 1}, Variant ${j + 1}: Text yoki rasm kiritish shart!`);
+            return;
+          }
+        }
+      }
+
       const formattedQuestions = formData.questions.map((q, idx) => ({
         id: q.id || idx + 1,
         text: q.text,
+        image: q.image || '',
         options: q.options.map((opt, optIdx) => ({
           value: typeof opt.value !== 'undefined' ? opt.value : optIdx,
           label: opt.label,
           score: parseInt(opt.score) || 0,
+          image: opt.image || '',
         })),
       }));
 
@@ -167,6 +216,16 @@ const Tests = () => {
       console.log('Formatted interpretations:', interpretations);
       console.log('Questions:', testData.questions);
 
+      // Log images in questions and options
+      if (testData.questions && testData.questions.length > 0) {
+        testData.questions.forEach((q, idx) => {
+          console.log(`Question ${idx + 1} image:`, q.image);
+          q.options?.forEach((opt, optIdx) => {
+            console.log(`Question ${idx + 1}, Option ${optIdx + 1} image:`, opt.image);
+          });
+        });
+      }
+
       setSelectedTest(testData);
       setFormData({
         code: testData.code || '',
@@ -219,9 +278,10 @@ const Tests = () => {
         ...formData.questions,
         {
           text: '',
+          image: '',
           options: [
-            { label: '', score: 0 },
-            { label: '', score: 0 },
+            { label: '', score: 0, image: '' },
+            { label: '', score: 0, image: '' },
           ],
         },
       ],
@@ -241,7 +301,7 @@ const Tests = () => {
 
   const addOption = (questionIndex) => {
     const newQuestions = [...formData.questions];
-    newQuestions[questionIndex].options.push({ label: '', score: 0 });
+    newQuestions[questionIndex].options.push({ label: '', score: 0, image: '' });
     setFormData({ ...formData, questions: newQuestions });
   };
 
@@ -570,6 +630,46 @@ const Tests = () => {
                           required
                         />
 
+                        {/* Question Image Upload */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Savol uchun rasm</label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  console.log(`Uploading image for question ${qIndex + 1}:`, file.name, file.size);
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    console.log(`Image loaded for question ${qIndex + 1}, length:`, reader.result.length);
+                                    updateQuestion(qIndex, 'image', reader.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                            />
+                            {question.image && (
+                              <button
+                                type="button"
+                                onClick={() => updateQuestion(qIndex, 'image', '')}
+                                className="text-red-600 hover:text-red-700 text-sm"
+                              >
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
+                          {question.image && (
+                            <img
+                              src={question.image}
+                              alt="Savol rasmi"
+                              className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                            />
+                          )}
+                        </div>
+
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <label className="text-sm font-medium text-gray-700">Variantlar</label>
@@ -584,32 +684,72 @@ const Tests = () => {
                           </div>
 
                           {question.options.map((option, oIndex) => (
-                            <div key={oIndex} className="flex items-center space-x-2">
-                              <input
-                                type="text"
-                                value={option.label}
-                                onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="Variant matni..."
-                                required
-                              />
-                              <input
-                                type="number"
-                                value={option.score}
-                                onChange={(e) => updateOption(qIndex, oIndex, 'score', e.target.value)}
-                                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="Ball"
-                                required
-                              />
-                              {question.options.length > 2 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeOption(qIndex, oIndex)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <X size={18} />
-                                </button>
-                              )}
+                            <div key={oIndex} className="bg-white rounded-lg p-3 space-y-2 border border-gray-200">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  value={option.label}
+                                  onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                  placeholder="Variant matni (yoki rasm qo'shing)..."
+                                />
+                                <input
+                                  type="number"
+                                  value={option.score}
+                                  onChange={(e) => updateOption(qIndex, oIndex, 'score', e.target.value)}
+                                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                  placeholder="Ball"
+                                  required
+                                />
+                                {question.options.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeOption(qIndex, oIndex)}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <X size={18} />
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Option Image Upload */}
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        console.log(`Uploading image for option ${oIndex + 1} of question ${qIndex + 1}:`, file.name, file.size);
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          console.log(`Image loaded for option ${oIndex + 1}, length:`, reader.result.length);
+                                          updateOption(qIndex, oIndex, 'image', reader.result);
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                    className="text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                  />
+                                  {option.image && (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateOption(qIndex, oIndex, 'image', '')}
+                                      className="text-red-600 hover:text-red-700 text-xs"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                                {option.image && (
+                                  <img
+                                    src={option.image}
+                                    alt="Variant rasmi"
+                                    className="w-24 h-24 object-cover rounded border border-gray-300"
+                                  />
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
