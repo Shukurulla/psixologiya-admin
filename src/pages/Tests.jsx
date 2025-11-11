@@ -712,9 +712,16 @@ const Tests = () => {
                                 )}
                               </div>
 
-                              {/* Option Image Upload */}
+                              {/* Option Image or Color */}
                               <div className="space-y-2">
                                 <div className="flex items-center space-x-2">
+                                  <input
+                                    type="color"
+                                    value={option.image && option.image.startsWith('#') ? option.image : '#000000'}
+                                    onChange={(e) => updateOption(qIndex, oIndex, 'image', e.target.value)}
+                                    className="w-12 h-9 rounded border border-gray-300 cursor-pointer"
+                                    title="Rang tanlash"
+                                  />
                                   <input
                                     type="file"
                                     accept="image/*"
@@ -743,11 +750,21 @@ const Tests = () => {
                                   )}
                                 </div>
                                 {option.image && (
-                                  <img
-                                    src={option.image}
-                                    alt="Variant rasmi"
-                                    className="w-24 h-24 object-cover rounded border border-gray-300"
-                                  />
+                                  option.image.startsWith('#') ? (
+                                    <div className="flex items-center space-x-2">
+                                      <div
+                                        className="w-20 h-20 rounded-lg border-2 border-gray-300"
+                                        style={{ backgroundColor: option.image }}
+                                      />
+                                      <span className="text-xs text-gray-600">{option.image}</span>
+                                    </div>
+                                  ) : (
+                                    <img
+                                      src={option.image}
+                                      alt="Variant rasmi"
+                                      className="w-24 h-24 object-cover rounded border border-gray-300"
+                                    />
+                                  )
                                 )}
                               </div>
                             </div>
