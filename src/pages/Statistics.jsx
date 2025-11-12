@@ -71,7 +71,8 @@ const Statistics = () => {
       // Get all test results for this test
       const response = await adminApi.getTestResults({ testId: test._id });
       console.log("Test results response:", response);
-      const results = response.data?.results || response.data?.data?.results || [];
+      const results =
+        response.data?.results || response.data?.data?.results || [];
 
       // Group by faculty
       const facultyMap = {};
@@ -245,7 +246,7 @@ const Statistics = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Jami topshirgan</span>
                 <span className="text-sm font-semibold text-gray-800">
-                  {test.completionCount || 0}
+                  {test.completedCount || 0}
                 </span>
               </div>
 
@@ -253,13 +254,6 @@ const Statistics = () => {
                 <span className="text-sm text-gray-600">E'tibor talab</span>
                 <span className="text-sm font-semibold text-red-600">
                   {test.needsAttentionCount || 0}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">O'rtacha ball</span>
-                <span className="text-sm font-semibold text-green-600">
-                  {test.averageScore?.toFixed(1) || 0}
                 </span>
               </div>
             </div>
@@ -274,7 +268,7 @@ const Statistics = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center  p-4 z-50"
             onClick={() => setSelectedTest(null)}
           >
             <motion.div
@@ -282,9 +276,9 @@ const Statistics = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl max-w-7xl w-full h-[80vh] flex flex-col"
             >
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <div className="sticky top-0 bg-white border-b rounded-xl border-gray-200 p-6 flex items-center justify-between flex-shrink-0">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">
                     {selectedTest.testName}
@@ -301,7 +295,7 @@ const Statistics = () => {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto flex-1">
                 {testFaculties.length === 0 ? (
                   <div className="text-center py-12">
                     <School className="text-gray-400 mx-auto mb-4" size={48} />
@@ -310,7 +304,7 @@ const Statistics = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {testFaculties.map((faculty) => (
                       <div
                         key={faculty.departmentName}
@@ -324,7 +318,10 @@ const Statistics = () => {
                               {faculty.departmentName}
                             </h3>
                           </div>
-                          <ChevronRight className="text-purple-600 group-hover:translate-x-1 transition-transform" size={20} />
+                          <ChevronRight
+                            className="text-purple-600 group-hover:translate-x-1 transition-transform"
+                            size={20}
+                          />
                         </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center justify-between">
@@ -365,9 +362,9 @@ const Statistics = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl max-w-7xl w-full h-[80vh] flex flex-col"
             >
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between flex-shrink-0">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">
                     {selectedFaculty.departmentName}
@@ -384,14 +381,17 @@ const Statistics = () => {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto flex-1">
                 {facultyGroups.length === 0 ? (
                   <div className="text-center py-12">
-                    <BookOpen className="text-gray-400 mx-auto mb-4" size={48} />
+                    <BookOpen
+                      className="text-gray-400 mx-auto mb-4"
+                      size={48}
+                    />
                     <p className="text-gray-500">Guruhlar topilmadi</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {facultyGroups.map((group) => (
                       <div
                         key={group.groupName}
@@ -405,7 +405,10 @@ const Statistics = () => {
                               {group.groupName}
                             </h3>
                           </div>
-                          <ChevronRight className="text-purple-600 group-hover:translate-x-1 transition-transform" size={20} />
+                          <ChevronRight
+                            className="text-purple-600 group-hover:translate-x-1 transition-transform"
+                            size={20}
+                          />
                         </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center justify-between">
@@ -446,9 +449,9 @@ const Statistics = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl max-w-7xl w-full h-[80vh] flex flex-col"
             >
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between flex-shrink-0">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">
                     {selectedGroup.groupName}
@@ -465,52 +468,53 @@ const Statistics = () => {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto flex-1">
                 {groupStudents.length === 0 ? (
                   <div className="text-center py-12">
                     <Users className="text-gray-400 mx-auto mb-4" size={48} />
                     <p className="text-gray-500">Talabalar topilmadi</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {groupStudents.map((student) => (
                       <div
                         key={student._id}
                         onClick={() => handleStudentClick(student)}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 cursor-pointer transition-colors"
+                        className="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100 cursor-pointer transition-colors"
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-col items-center space-y-1 mb-2">
                           {student.image ? (
                             <img
                               src={student.image}
                               alt={student.full_name}
                               className="w-12 h-12 rounded-full object-cover"
                               onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextElementSibling.style.display = 'flex';
+                                e.target.style.display = "none";
+                                e.target.nextElementSibling.style.display =
+                                  "flex";
                               }}
                             />
                           ) : null}
                           <div
                             className="w-12 h-12 rounded-full gradient-purple flex items-center justify-center"
-                            style={{ display: student.image ? 'none' : 'flex' }}
+                            style={{ display: student.image ? "none" : "flex" }}
                           >
                             <span className="text-white font-semibold text-lg">
                               {student.full_name?.charAt(0) || "T"}
                             </span>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-800">
+                          <div className="text-center">
+                            <p className="font-medium text-gray-800 text-xs line-clamp-1">
                               {student.full_name}
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-xs text-gray-500">
                               {student.student_id_number}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-purple-600">
-                            Bu test: {student.completedTestsCount || 0}
+                        <div className="text-center">
+                          <p className="text-xs font-semibold text-purple-600">
+                            {student.completedTestsCount || 0} test
                           </p>
                         </div>
                       </div>
@@ -561,14 +565,14 @@ const Statistics = () => {
                       alt={studentDetails.full_name}
                       className="w-16 h-16 rounded-full object-cover border-2 border-purple-200"
                       onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextElementSibling.style.display = 'flex';
+                        e.target.style.display = "none";
+                        e.target.nextElementSibling.style.display = "flex";
                       }}
                     />
                   ) : null}
                   <div
                     className="w-16 h-16 rounded-full gradient-purple flex items-center justify-center"
-                    style={{ display: studentDetails.image ? 'none' : 'flex' }}
+                    style={{ display: studentDetails.image ? "none" : "flex" }}
                   >
                     <span className="text-white font-bold text-2xl">
                       {studentDetails.full_name?.charAt(0) || "T"}
@@ -636,7 +640,8 @@ const Statistics = () => {
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Barcha test natijalari
                   </h3>
-                  {studentDetails.results && studentDetails.results.length > 0 ? (
+                  {studentDetails.results &&
+                  studentDetails.results.length > 0 ? (
                     <div className="space-y-2">
                       {studentDetails.results.map((result) => (
                         <div
