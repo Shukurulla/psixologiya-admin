@@ -8,7 +8,8 @@ import {
   Menu,
   X,
   MessageSquare,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
 import { authService } from '../services/auth';
 import { useState, useEffect } from 'react';
@@ -24,6 +25,7 @@ const Sidebar = () => {
     { path: '/statistics', icon: BarChart3, label: 'Statistika' },
     { path: '/faculties', icon: School, label: 'Fakultetlar' },
     { path: '/tests', icon: FileText, label: 'Testlar' },
+    { path: '/needs-attention', icon: AlertTriangle, label: 'E\'tibor talab' },
     { path: '/chats', icon: MessageSquare, label: 'Suhbatlar' },
     { path: '/appointments', icon: Calendar, label: 'Qabulga yozilishlar' },
   ];

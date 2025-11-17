@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminApi } from "../services/adminApi";
+import * as XLSX from "xlsx";
 import {
   BarChart,
   Bar,
@@ -23,6 +24,7 @@ import {
   Eye,
   X,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -68,11 +70,16 @@ const Statistics = () => {
   const handleTestClick = async (test) => {
     setSelectedTest(test);
     try {
-      // Get all test results for this test
-      const response = await adminApi.getTestResults({ testId: test._id });
-      console.log("Test results response:", response);
+      // Get all test results for this test and all faculties data
+      const [resultsResponse, facultiesResponse] = await Promise.all([
+        adminApi.getTestResults({ testId: test._id }),
+        adminApi.getFaculties(),
+      ]);
+
+      console.log("Test results response:", resultsResponse);
       const results =
-        response.data?.results || response.data?.data?.results || [];
+        resultsResponse.data?.results || resultsResponse.data?.data?.results || [];
+      const allFaculties = facultiesResponse.data || [];
 
       // Group by faculty
       const facultyMap = {};
@@ -82,21 +89,33 @@ const Statistics = () => {
           facultyMap[deptName] = {
             departmentName: deptName,
             departmentId: result.department?.id || result.department?.code,
-            studentCount: 0,
+            totalStudentsInFaculty: 0,
+            studentsCompletedTest: 0,
             completedTests: 0,
+            needsAttentionCount: 0,
             results: [],
           };
         }
         facultyMap[deptName].completedTests++;
         facultyMap[deptName].results.push(result);
+        if (result.needsAttention && !result.isReviewed) {
+          facultyMap[deptName].needsAttentionCount++;
+        }
       });
 
-      // Count unique students per faculty
+      // Add total student count from faculties data
+      allFaculties.forEach((faculty) => {
+        if (facultyMap[faculty.departmentName]) {
+          facultyMap[faculty.departmentName].totalStudentsInFaculty = faculty.studentCount || 0;
+        }
+      });
+
+      // Count unique students who completed this test per faculty
       Object.keys(facultyMap).forEach((key) => {
         const uniqueStudents = new Set(
           facultyMap[key].results.map((r) => r.student?._id)
         );
-        facultyMap[key].studentCount = uniqueStudents.size;
+        facultyMap[key].studentsCompletedTest = uniqueStudents.size;
       });
 
       setTestFaculties(Object.values(facultyMap));
@@ -109,6 +128,12 @@ const Statistics = () => {
   const handleFacultyClick = async (faculty) => {
     setSelectedFaculty(faculty);
     try {
+      // Get all groups data for this faculty
+      const groupsResponse = await adminApi.getGroups({
+        department: faculty.departmentName
+      });
+      const allGroups = groupsResponse.data || [];
+
       // Group results by group
       const groupMap = {};
       faculty.results.forEach((result) => {
@@ -117,21 +142,33 @@ const Statistics = () => {
           groupMap[groupName] = {
             groupName: groupName,
             groupId: result.group?.id || result.group?.code,
-            studentCount: 0,
+            totalStudentsInGroup: 0,
+            studentsCompletedTest: 0,
             completedTests: 0,
+            needsAttentionCount: 0,
             results: [],
           };
         }
         groupMap[groupName].completedTests++;
         groupMap[groupName].results.push(result);
+        if (result.needsAttention && !result.isReviewed) {
+          groupMap[groupName].needsAttentionCount++;
+        }
       });
 
-      // Count unique students per group
+      // Add total student count from groups data
+      allGroups.forEach((group) => {
+        if (groupMap[group.groupName]) {
+          groupMap[group.groupName].totalStudentsInGroup = group.studentCount || 0;
+        }
+      });
+
+      // Count unique students who completed this test per group
       Object.keys(groupMap).forEach((key) => {
         const uniqueStudents = new Set(
           groupMap[key].results.map((r) => r.student?._id)
         );
-        groupMap[key].studentCount = uniqueStudents.size;
+        groupMap[key].studentsCompletedTest = uniqueStudents.size;
       });
 
       setFacultyGroups(Object.values(groupMap));
@@ -178,14 +215,102 @@ const Statistics = () => {
     try {
       const [detailsRes, resultsRes] = await Promise.all([
         adminApi.getStudentById(student._id),
-        adminApi.getStudentResults(student._id),
+        adminApi.getTestResults({
+          testId: selectedTest._id,
+          search: student.student_id_number
+        }),
       ]);
+
+      const allResults = resultsRes.data?.results || resultsRes.data?.data?.results || [];
+      // Filter to only this student's results for this test
+      const studentTestResults = allResults.filter(r => r.student?._id === student._id);
+
       setStudentDetails({
         ...(detailsRes.data?.data || detailsRes.data),
-        results: resultsRes.data?.data || resultsRes.data,
+        results: studentTestResults,
+        testName: selectedTest.testName,
       });
     } catch (error) {
       console.error("Student details error:", error);
+    }
+  };
+
+  const handleExportToExcel = async (test) => {
+    try {
+      // Get detailed test results - get ALL results (no limit)
+      const response = await adminApi.getTestResults({
+        testId: test._id
+      });
+      const results = response.data?.results || response.data?.data?.results || [];
+
+      if (results.length === 0) {
+        alert("Bu test uchun ma'lumot topilmadi");
+        return;
+      }
+
+      // Debug: Check for missing student data
+      const missingStudents = results.filter(r => !r.student || !r.student.full_name);
+      if (missingStudents.length > 0) {
+        console.warn(`${missingStudents.length} results have missing student data (likely deleted students)`);
+        console.log('Missing students details:', missingStudents.slice(0, 5).map((r, idx) => ({
+          index: results.indexOf(r),
+          id: r._id,
+          student: r.student,
+          department: r.department?.name,
+          group: r.group?.name
+        })));
+      }
+
+      console.log(`Total results: ${results.length}, Missing: ${missingStudents.length}, Valid: ${results.length - missingStudents.length}`);
+
+      // Prepare data for Excel - INCLUDE ALL RESULTS (even deleted students)
+      const excelData = results.map((result, index) => {
+        // Use snapshot data if student is deleted, otherwise use current student data
+        const studentName = result.student?.full_name || result.studentSnapshot?.full_name || "O'chirilgan talaba";
+        const studentId = result.student?.student_id_number || result.studentSnapshot?.student_id_number || "N/A";
+
+        return {
+          "№": index + 1,
+          "Talaba": studentName,
+          "Student ID": studentId,
+          "Fakultet": result.department?.name || "N/A",
+          "Guruh": result.group?.name || "N/A",
+          "Ball": result.scores?.total || 0,
+          "Holat": result.needsAttention && !result.isReviewed ? "E'tibor talab" : "Normal",
+          "Daraja": result.interpretation?.level || "N/A",
+          "Sana": result.completedAt ? format(new Date(result.completedAt), "dd.MM.yyyy HH:mm") : "N/A",
+        };
+      });
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 5 },  // №
+        { wch: 30 }, // Talaba
+        { wch: 15 }, // Student ID
+        { wch: 35 }, // Fakultet
+        { wch: 15 }, // Guruh
+        { wch: 10 }, // Ball
+        { wch: 15 }, // Holat
+        { wch: 20 }, // Daraja
+        { wch: 18 }, // Sana
+      ];
+      ws['!cols'] = colWidths;
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Natijalar");
+
+      // Generate filename with test name and current date
+      const fileName = `${test.testName}_${format(new Date(), "dd-MM-yyyy")}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(wb, fileName);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("Excel faylni yuklab olishda xatolik yuz berdi");
     }
   };
 
@@ -229,24 +354,36 @@ const Statistics = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            onClick={() => handleTestClick(test)}
-            className="bg-white rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer group"
+            className="bg-white rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all duration-300 group"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 gradient-purple rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <FileText className="text-white" size={24} />
               </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExportToExcel(test);
+                }}
+                className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                title="Excel ga yuklab olish"
+              >
+                <Download size={18} />
+              </button>
             </div>
 
-            <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2">
+            <h3
+              onClick={() => handleTestClick(test)}
+              className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 cursor-pointer"
+            >
               {test.testName}
             </h3>
 
             <div className="space-y-3 mt-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Jami topshirgan</span>
-                <span className="text-sm font-semibold text-gray-800">
-                  {test.completedCount || 0}
+                <span className="text-sm font-semibold text-purple-600">
+                  {test.studentCount || 0} ta talaba
                 </span>
               </div>
 
@@ -257,6 +394,13 @@ const Statistics = () => {
                 </span>
               </div>
             </div>
+
+            <button
+              onClick={() => handleTestClick(test)}
+              className="mt-4 w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-purple-700 transition-all"
+            >
+              Batafsil
+            </button>
           </motion.div>
         ))}
       </div>
@@ -327,13 +471,19 @@ const Statistics = () => {
                           <div className="flex items-center justify-between">
                             <span className="text-gray-600">Talabalar:</span>
                             <span className="font-semibold text-gray-800">
-                              {faculty.studentCount}
+                              {faculty.totalStudentsInFaculty || 0}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-gray-600">Topshirgan:</span>
                             <span className="font-semibold text-purple-600">
-                              {faculty.completedTests}
+                              {faculty.studentsCompletedTest || 0}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">E'tibor talab:</span>
+                            <span className="font-semibold text-red-600">
+                              {faculty.needsAttentionCount || 0}
                             </span>
                           </div>
                         </div>
@@ -414,13 +564,19 @@ const Statistics = () => {
                           <div className="flex items-center justify-between">
                             <span className="text-gray-600">Talabalar:</span>
                             <span className="font-semibold text-gray-800">
-                              {group.studentCount}
+                              {group.totalStudentsInGroup || 0}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-gray-600">Topshirgan:</span>
                             <span className="font-semibold text-blue-600">
-                              {group.completedTests}
+                              {group.studentsCompletedTest || 0}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">E'tibor talab:</span>
+                            <span className="font-semibold text-red-600">
+                              {group.needsAttentionCount || 0}
                             </span>
                           </div>
                         </div>
@@ -545,9 +701,14 @@ const Statistics = () => {
               className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Talaba ma'lumotlari
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Talaba ma'lumotlari
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {studentDetails.testName}
+                  </p>
+                </div>
                 <button
                   onClick={() => setSelectedStudent(null)}
                   className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center"
@@ -638,7 +799,7 @@ const Statistics = () => {
                 {/* Test Results */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Barcha test natijalari
+                    Test natijalari
                   </h3>
                   {studentDetails.results &&
                   studentDetails.results.length > 0 ? (
@@ -650,7 +811,7 @@ const Statistics = () => {
                         >
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-medium text-gray-800">
-                              {result.test?.name}
+                              {result.test?.name || studentDetails.testName}
                             </p>
                             <span
                               className={`

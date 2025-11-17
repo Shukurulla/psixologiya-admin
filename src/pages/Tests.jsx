@@ -9,6 +9,7 @@ const Tests = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTest, setSelectedTest] = useState(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('uz'); // Current language being edited
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -20,6 +21,11 @@ const Tests = () => {
     scoringMethod: 'sum',
     questions: [],
     interpretation: [],
+    translations: {
+      uz: { name: '', description: '', instruction: '', questions: [] },
+      ru: { name: '', description: '', instruction: '', questions: [] },
+      qq: { name: '', description: '', instruction: '', questions: [] },
+    },
   });
 
   useEffect(() => {
@@ -137,6 +143,23 @@ const Tests = () => {
   const handleEdit = async (e) => {
     e.preventDefault();
     try {
+      // Save current language data first
+      const currentData = {
+        name: formData.name,
+        description: formData.description,
+        instruction: formData.instruction,
+        questions: formData.questions,
+      };
+
+      console.log('Saving current language data for', selectedLanguage, ':', currentData);
+
+      const updatedTranslations = {
+        ...formData.translations,
+        [selectedLanguage]: currentData,
+      };
+
+      console.log('All translations to save:', updatedTranslations);
+
       // Validate that each option has either label or image (at least one required)
       for (let i = 0; i < formData.questions.length; i++) {
         const question = formData.questions[i];
@@ -152,7 +175,8 @@ const Tests = () => {
         }
       }
 
-      const formattedQuestions = formData.questions.map((q, idx) => ({
+      // Format Uzbek questions (default)
+      const formattedQuestions = updatedTranslations.uz.questions.map((q, idx) => ({
         id: q.id || idx + 1,
         text: q.text,
         image: q.image || '',
@@ -172,10 +196,77 @@ const Tests = () => {
         severity: interp.severity || 'normal',
       }));
 
+      // Prepare translations
+      const translations = {
+        uz: {
+          name: updatedTranslations.uz.name,
+          description: updatedTranslations.uz.description,
+          instruction: updatedTranslations.uz.instruction,
+          questions: updatedTranslations.uz.questions.map((q, idx) => ({
+            id: q.id || idx + 1,
+            text: q.text,
+            image: q.image || '',
+            options: q.options.map((opt, optIdx) => ({
+              value: typeof opt.value !== 'undefined' ? opt.value : optIdx,
+              label: opt.label,
+              score: parseInt(opt.score) || 0,
+              image: opt.image || '',
+            })),
+          })),
+        },
+      };
+
+      // Add Russian translation if exists
+      if (updatedTranslations.ru.questions?.length > 0 || updatedTranslations.ru.name) {
+        translations.ru = {
+          name: updatedTranslations.ru.name,
+          description: updatedTranslations.ru.description,
+          instruction: updatedTranslations.ru.instruction,
+          questions: updatedTranslations.ru.questions.map((q, idx) => ({
+            id: q.id || idx + 1,
+            text: q.text,
+            image: q.image || '',
+            options: q.options.map((opt, optIdx) => ({
+              value: typeof opt.value !== 'undefined' ? opt.value : optIdx,
+              label: opt.label,
+              score: parseInt(opt.score) || 0,
+              image: opt.image || '',
+            })),
+          })),
+        };
+      }
+
+      // Add Karakalpak translation if exists
+      if (updatedTranslations.qq.questions?.length > 0 || updatedTranslations.qq.name) {
+        translations.qq = {
+          name: updatedTranslations.qq.name,
+          description: updatedTranslations.qq.description,
+          instruction: updatedTranslations.qq.instruction,
+          questions: updatedTranslations.qq.questions.map((q, idx) => ({
+            id: q.id || idx + 1,
+            text: q.text,
+            image: q.image || '',
+            options: q.options.map((opt, optIdx) => ({
+              value: typeof opt.value !== 'undefined' ? opt.value : optIdx,
+              label: opt.label,
+              score: parseInt(opt.score) || 0,
+              image: opt.image || '',
+            })),
+          })),
+        };
+      }
+
       const submitData = {
-        ...formData,
+        name: updatedTranslations.uz.name,
+        description: updatedTranslations.uz.description,
+        instruction: updatedTranslations.uz.instruction,
         questions: formattedQuestions,
         interpretation: formattedInterpretations,
+        isActive: formData.isActive,
+        isSensitive: formData.isSensitive,
+        estimatedTime: formData.estimatedTime,
+        scoringMethod: formData.scoringMethod,
+        translations: translations,
       };
 
       await adminApi.updateTest(selectedTest._id, submitData);
@@ -226,7 +317,20 @@ const Tests = () => {
         });
       }
 
+      // Prepare translations
+      const translations = {
+        uz: {
+          name: testData.name || '',
+          description: testData.description || '',
+          instruction: testData.instruction || '',
+          questions: testData.questions || [],
+        },
+        ru: testData.translations?.ru || { name: '', description: '', instruction: '', questions: [] },
+        qq: testData.translations?.qq || { name: '', description: '', instruction: '', questions: [] },
+      };
+
       setSelectedTest(testData);
+      setSelectedLanguage('uz');
       setFormData({
         code: testData.code || '',
         name: testData.name || '',
@@ -238,6 +342,7 @@ const Tests = () => {
         scoringMethod: testData.scoringMethod || 'sum',
         questions: testData.questions || [],
         interpretation: interpretations,
+        translations: translations,
       });
 
       console.log('Form data set:', {
@@ -266,8 +371,86 @@ const Tests = () => {
       scoringMethod: 'sum',
       questions: [],
       interpretation: [],
+      translations: {
+        uz: { name: '', description: '', instruction: '', questions: [] },
+        ru: { name: '', description: '', instruction: '', questions: [] },
+        qq: { name: '', description: '', instruction: '', questions: [] },
+      },
     });
     setSelectedTest(null);
+    setSelectedLanguage('uz');
+  };
+
+  // Language handling functions
+  const handleLanguageChange = (lang) => {
+    console.log('Changing language from', selectedLanguage, 'to', lang);
+
+    // Save current language data before switching
+    const currentData = {
+      name: formData.name,
+      description: formData.description,
+      instruction: formData.instruction,
+      questions: formData.questions,
+    };
+
+    console.log('Saving current data for', selectedLanguage, ':', currentData);
+
+    setFormData(prev => {
+      const updatedTranslations = {
+        ...prev.translations,
+        [selectedLanguage]: currentData,
+      };
+
+      console.log('Updated translations:', updatedTranslations);
+
+      const langData = updatedTranslations[lang];
+
+      if (langData && (langData.name || langData.questions?.length > 0)) {
+        console.log('Loading saved translation for', lang, ':', langData);
+        // Load saved translation
+        return {
+          ...prev,
+          translations: updatedTranslations,
+          name: langData.name || '',
+          description: langData.description || '',
+          instruction: langData.instruction || '',
+          questions: langData.questions || [],
+        };
+      } else {
+        console.log('Loading Uzbek template for', lang);
+        // Load Uzbek data as template for new translation
+        const uzData = updatedTranslations.uz;
+        return {
+          ...prev,
+          translations: updatedTranslations,
+          name: uzData.name || '',
+          description: uzData.description || '',
+          instruction: uzData.instruction || '',
+          questions: uzData.questions || [],
+        };
+      }
+    });
+
+    setSelectedLanguage(lang);
+  };
+
+  const saveCurrentLanguageData = () => {
+    const currentData = {
+      name: formData.name,
+      description: formData.description,
+      instruction: formData.instruction,
+      questions: formData.questions,
+    };
+
+    console.log('Saving data for', selectedLanguage, 'before submit:', currentData);
+
+    setFormData(prev => ({
+      ...prev,
+      translations: {
+        ...prev.translations,
+        [selectedLanguage]: currentData,
+      },
+    }));
   };
 
   // Question management
@@ -487,20 +670,61 @@ const Tests = () => {
               className="bg-white rounded-2xl max-w-4xl w-full my-8 max-h-[90vh] flex flex-col"
             >
               {/* Header */}
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between rounded-t-2xl">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  {showCreateModal ? 'Yangi test yaratish' : 'Testni tahrirlash'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setShowEditModal(false);
-                    resetForm();
-                  }}
-                  className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center"
-                >
-                  <X size={24} />
-                </button>
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {showCreateModal ? 'Yangi test yaratish' : 'Testni tahrirlash'}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setShowEditModal(false);
+                      resetForm();
+                    }}
+                    className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                {/* Language Tabs */}
+                {showEditModal && (
+                  <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => handleLanguageChange('uz')}
+                      className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                        selectedLanguage === 'uz'
+                          ? 'bg-white text-purple-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      O'zbek
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLanguageChange('ru')}
+                      className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                        selectedLanguage === 'ru'
+                          ? 'bg-white text-purple-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      Русский
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLanguageChange('qq')}
+                      className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                        selectedLanguage === 'qq'
+                          ? 'bg-white text-purple-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      Қарақалпақ
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Form */}
@@ -508,7 +732,14 @@ const Tests = () => {
                 <div className="p-6 space-y-6">
                   {/* Basic Info */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Asosiy ma'lumotlar</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-800">Asosiy ma'lumotlar</h3>
+                      {showEditModal && selectedLanguage !== 'uz' && (
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg">
+                          {selectedLanguage === 'ru' ? 'Rus tilida tahrirlash' : 'Qoraqolpoq tilida tahrirlash'}
+                        </span>
+                      )}
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>

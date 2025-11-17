@@ -182,7 +182,7 @@ const Faculties = () => {
             {faculty.testStats?.slice(0, 3).map((test) => (
               <div key={test.testName} className="mt-3 flex items-center justify-between text-xs">
                 <span className="text-gray-500 truncate flex-1">{test.testName}</span>
-                <span className="text-gray-700 font-medium ml-2">{test.count}</span>
+                <span className="text-gray-700 font-medium ml-2">{test.studentCount || 0} ta talaba</span>
               </div>
             ))}
           </motion.div>
@@ -232,14 +232,14 @@ const Faculties = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Test completion chart */}
                   <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Testlar bo'yicha</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Testlar bo'yicha talabalar soni</h3>
                     <ResponsiveContainer width="100%" height={200}>
                       <BarChart data={selectedFaculty.testStats?.slice(0, 6)}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="testName" tick={{ fontSize: 10 }} />
                         <YAxis />
                         <Tooltip />
-                        <Bar dataKey="count" fill="#667eea" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="studentCount" fill="#667eea" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

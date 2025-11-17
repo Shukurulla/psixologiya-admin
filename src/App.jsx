@@ -8,6 +8,7 @@ import Faculties from './pages/Faculties';
 import Tests from './pages/Tests';
 import Chats from './pages/Chats';
 import AppointmentsAdmin from './pages/AppointmentsAdmin';
+import NeedsAttention from './pages/NeedsAttention';
 import MainLayout from './layouts/MainLayout';
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ function App() {
             <Route path="statistics" element={<Statistics />} />
             <Route path="faculties" element={<Faculties />} />
             <Route path="tests" element={<Tests />} />
+            <Route path="needs-attention" element={<NeedsAttention />} />
             <Route path="chats" element={<Chats />} />
             <Route path="appointments" element={<AppointmentsAdmin />} />
           </Route>
